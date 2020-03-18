@@ -1,15 +1,22 @@
 version: "3"
 services:
-    ssh-authorized-keys:
-        build: ssh-authorized-keys
-        hostname: ssh-authorized-keys
+    ssh-with-authorized-keys:
+        build: ssh-with-authorized-keys
+        hostname: ssh-with-authorized-keys
         ports: 
-            - 22
-
+            - "1022:22"
+            
+    ssh-with-signed-hostkey:
+        build: ssh-with-signed-hostkey
+        hostname: ssh-with-signed-hostkey
+        ports: 
+            - "2022:22"
+        links: 
+            - vault
     vault:
         image: vault
         ports:
-            - "8200"
+            - 8200:8200
         environment:
             - "VAULT_DEV_ROOT_TOKEN_ID=root-token"
             

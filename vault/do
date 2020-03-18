@@ -3,10 +3,15 @@
 set -eu
 
 DIR="$(cd "$(dirname "$0")" ; pwd -P)"
-source "${DIR}/../lib/common.sh"
+source "${DIR}/../lib/shell/common.sh"
 
-function clean {
+SNIPPETS_TEMP_DIR="${DIR}/.snippets"
+
+function task_clean {
   rm -rf "${DIR}/ssh-keys"
+  rm -rf "${DIR}/ssh-with-signed-hostkey/ssh-keys"
+  rm -rf "${DIR}/ssh-with-authorized-keys/ssh-keys"
+
   docker-compose rm -sf 
 }
 
@@ -15,25 +20,95 @@ function ensure_software {
 }
 
 function start_vault {
-  docker-compose run -d -p 8200:8200 vault
+  docker-compose up -d vault
+}
+
+function task_start_ssh_with_authorized_keys {
+  docker-compose up -d ssh-with-authorized-keys
+}
+
+function task_start_ssh_with_signed_hostkey {
+  docker-compose up -d ssh-with-signed-hostkey
+}
+
+function task_stop_ssh_with_signed_hostkey {
+  docker-compose rm -sf ssh-with-authorized-keys
+}
+
+function task_terraform_apply {
+  task_terraform "apply" "config"
 }
 
 function task_terraform {
-  ensure_terraform "${DIR}/.bin"
   export VAULT_ADDR=http://localhost:8200
   export VAULT_TOKEN=root-token
   "${DIR}/.bin/terraform" "$@"
 }
 
-function task_build {
+function task_prepare {
+  task_clean
   ensure_software
-  clean
+  task_terraform "init" "config"
   mkdir -p "${DIR}/ssh-keys"
   ssh-keygen -b 2048 -t rsa -f "${DIR}/ssh-keys/bob_id_rsa" -q -N ""
   ssh-keygen -b 2048 -t rsa -f "${DIR}/ssh-keys/alice_id_rsa" -q -N ""
-  mkdir -p "${DIR}/ssh-authorized-keys/ssh-keys"
-  cp "${DIR}/ssh-keys/bob_id_rsa.pub" "${DIR}/ssh-authorized-keys/ssh-keys"
+
+  mkdir -p "${DIR}/ssh-with-signed-hostkey/ssh-keys"
+  cp "${DIR}/ssh-keys/bob_id_rsa.pub" "${DIR}/ssh-with-signed-hostkey/ssh-keys"
+
+  mkdir -p "${DIR}/ssh-with-authorized-keys/ssh-keys"
+  cp "${DIR}/ssh-keys/bob_id_rsa.pub" "${DIR}/ssh-with-authorized-keys/ssh-keys"
+
   docker-compose -f "${DIR}/docker-compose.yml" build --no-cache
+}
+
+function task_test {
+  task_clean
+  task_prepare
+  ./do start-ssh-authorized-keys
+  ssh -p 1022 -i ssh-keys/bob_id_rsa admin-ssh-user@localhost
+}
+
+function task_generate_and_insert_snippets() {
+
+  rm -rf "${SNIPPETS_TEMP_DIR}"
+  mkdir -p "${SNIPPETS_TEMP_DIR}" || true 
+
+  echo "generating snippets for '${DIR}'"
+  (
+    for file in $(git ls-tree -r master --name-only .); do
+      if [[ $file != *.md ]]; then
+        SNIPPETS_TEMP_DIR="${SNIPPETS_TEMP_DIR}" bundle exec ruby "${DIR}/../lib/ruby/extract_snippets.rb" "${file}"
+      fi
+    done
+  )
+  
+  local file="${DIR}/README.md"
+  echo "inserting snippets for '${file}'"
+  (
+    SNIPPETS_TEMP_DIR="${SNIPPETS_TEMP_DIR}" FILES_DIR="${DIR}" bundle exec ruby "${DIR}/../lib/ruby/insert_snippets.rb" "${file}"
+  )
+
+}
+
+function task_create_signing_key {
+  # snippet:create_signing_key
+  curl \
+    --header "X-Vault-Token: root-token" \
+    --request POST \
+    --data '{"generate_signing_key": true}' \
+    http://localhost:8200/v1/host-ssh/config/ca 
+  # /snippet:create_signing_key
+}
+
+function task_create_known_hosts {
+  # snippet:create_known_hosts
+  echo "@cert-authority localhost $(curl --silent http://localhost:8200/v1/host-ssh/public_key)" > "known_hosts"
+  # /snippet:create_known_hosts
+}
+
+function task_ssh_with_signed_hostkey {
+  ssh -o UserKnownHostsFile=./known_hosts  -p 2022 -i ssh-keys/bob_id_rsa admin-ssh-user@localhost
 }
 
 function task_usage {
@@ -44,8 +119,17 @@ function task_usage {
 arg=${1:-}
 shift || true
 case ${arg} in
-  build) task_build "$@" ;;
-  terraform) task_terraform "$@" ;;
+  clean) task_clean "$@" ;;
+  prepare) task_prepare "$@" ;;
+  test) task_test "$@" ;;
   start-vault) start_vault ;;
+  start-ssh-with-authorized-keys) task_start_ssh_with_authorized_keys ;;
+  stop-ssh-with-authorized-keys) task_stop_ssh_with_signed_hostkey ;;
+  start-ssh-with-signed-hostkey) task_start_ssh_with_signed_hostkey ;;
+  terraform-apply) task_terraform_apply "$@" ;;
+  create-signing-key) task_create_signing_key ;;
+  create-known-hosts) task_create_known_hosts ;;
+  ssh-with-signed-hostkey) task_ssh_with_signed_hostkey ;;
+  generate-and-insert-snippets) task_generate_and_insert_snippets ;;
   *) task_usage ;;
 esac

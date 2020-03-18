@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+set -eu
+
+DIR="$(cd "$(dirname "$0")" ; pwd -P)"
+source "${DIR}/../lib/common.sh"
+
+function clean {
+  rm -rf "${DIR}/ssh-keys"
+  docker-compose rm -sf 
+}
+
+function ensure_software {
+  ensure_terraform "${DIR}/.bin"
+}
+
+function start_vault {
+  docker-compose run -d -p 8200:8200 vault
+}
+
+function task_terraform {
+  ensure_terraform "${DIR}/.bin"
+  export VAULT_ADDR=http://localhost:8200
+  export VAULT_TOKEN=root-token
+  "${DIR}/.bin/terraform" "$@"
+}
+
+function task_build {
+  ensure_software
+  clean
+  mkdir -p "${DIR}/ssh-keys"
+  ssh-keygen -b 2048 -t rsa -f "${DIR}/ssh-keys/bob_id_rsa" -q -N ""
+  ssh-keygen -b 2048 -t rsa -f "${DIR}/ssh-keys/alice_id_rsa" -q -N ""
+  mkdir -p "${DIR}/ssh-authorized-keys/ssh-keys"
+  cp "${DIR}/ssh-keys/bob_id_rsa.pub" "${DIR}/ssh-authorized-keys/ssh-keys"
+  docker-compose -f "${DIR}/docker-compose.yml" build --no-cache
+}
+
+function task_usage {
+  echo "Usage: $0 ..."
+  exit 1
+}
+
+arg=${1:-}
+shift || true
+case ${arg} in
+  build) task_build "$@" ;;
+  terraform) task_terraform "$@" ;;
+  start-vault) start_vault ;;
+  *) task_usage ;;
+esac

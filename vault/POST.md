@@ -29,7 +29,6 @@ So lets start a docker container that contains an plain SSH server with the foll
 {{< highlight go "" >}}
 Port 22
 UsePAM yes
-
 HostKey /ssh/ssh_host_rsa_key
 
 AuthorizedKeysFile %h/.ssh/authorized_keys
@@ -206,11 +205,11 @@ The last step is to make this signed host key known the the SSH server using the
 <!-- file:ssh-with-signed-hostkey/sshd_config -->
 {{< highlight go "" >}}
 Port 22
-
+UsePAM yes
 HostKey /ssh/ssh_host_rsa_key
-HostCertificate /ssh/ssh_host_rsa_key_signed.pub
 
-UsePAM yes{{< / highlight >}}
+HostCertificate /ssh/ssh_host_rsa_key_signed.pub
+{{< / highlight >}}
 <!-- /file:ssh-with-signed-hostkey/sshd_config -->
 
 And we are good to go to start the improved SSH server
@@ -263,7 +262,6 @@ resource "vault_ssh_secret_backend_role" "user_ssh_role" {
     allow_user_certificates = true
     allowed_users           = "admin-ssh-user"
     default_user            = "admin-ssh-user"
-    ttl                     = "1m0s"
     default_extensions  = {
       permit-pty: ""
     }
@@ -298,9 +296,9 @@ and make it known to SSH by pointing `TrustedUserCAKeys` to the previously downl
 {{< highlight go "" >}}
 Port 22
 UsePAM yes
-
 HostKey /ssh/ssh_host_rsa_key
 HostCertificate /ssh/ssh_host_rsa_key_signed.pub
+
 TrustedUserCAKeys /ssh/user_ssh_ca.pub{{< / highlight >}}
 <!-- /file:ssh-with-trusted-user-ca/sshd_config -->
 

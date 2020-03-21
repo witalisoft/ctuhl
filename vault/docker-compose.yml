@@ -13,6 +13,15 @@ services:
             - "2022:22"
         links: 
             - vault
+
+    ssh-with-trusted-user-ca:
+        build: ssh-with-trusted-user-ca
+        hostname: ssh-with-trusted-user-ca
+        ports: 
+            - "3022:22"
+        links: 
+            - vault
+        
     vault:
         image: vault
         ports:

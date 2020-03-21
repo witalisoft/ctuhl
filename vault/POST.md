@@ -1,6 +1,13 @@
 # Preface
 
-This tutorial assume that you are already familiar with basic bash and the involved tools, namely terraform, vault and SSH. 
+This tutorial assume that you are already familiar with basic bash and the involved tools, namely terraform, vault and SSH.
+All needed sources for this tutorial are availabe at [https://github.com/pellepelster/ctuhl.git](https://github.com/pellepelster/ctuhl.git) inside the folder `vault`.
+
+```
+git clone https://github.com/pellepelster/ctuhl.git
+cd vault
+```
+
 To be able to follow all examples you have to build some prerequisites first, which can be simply done by calling
 
 ```

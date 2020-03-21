@@ -94,7 +94,7 @@ function task_generate_and_insert_snippets() {
     done
   )
   
-  local file="${DIR}/README.md"
+  local file="${DIR}/POST.md"
   echo "inserting snippets for '${file}'"
   (
     SNIPPETS_TEMP_DIR="${SNIPPETS_TEMP_DIR}" FILES_DIR="${DIR}" bundle exec ruby "${DIR}/../lib/ruby/insert_snippets.rb" "${file}"

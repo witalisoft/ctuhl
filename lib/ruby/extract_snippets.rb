@@ -1,4 +1,6 @@
 SNIPPETS_TEMP_DIR = ENV.fetch('SNIPPETS_TEMP_DIR')
+GITHUB_REPOSITORY = ENV.fetch('GITHUB_REPOSITORY')
+REPOSITORY_FILE_PREFIX = ENV.fetch('REPOSITORY_FILE_PREFIX')
 
 require_relative 'util'
 
@@ -39,9 +41,13 @@ ARGV.each do|filename|
       next
     end
     open(snippet_filename, 'w') { |file|
-      line_start = lines[snippet[:start] + 1][:number]
-      line_end = lines[snippet[:end] -1][:number]
-      #file.puts "{{% github href=\"#{filename}#L#{line_start}-L#{line_end}\" %}}#{File.basename filename}{{% /github %}}"
+      #line_start = lines[snippet[:start] + 1][:number]
+      #line_end = lines[snippet[:end] -1][:number]
+
+      line_start = start + 1
+      line_end = start + length - 1
+
+      file.puts "{{< github repository=\"#{GITHUB_REPOSITORY}\" file=\"#{REPOSITORY_FILE_PREFIX}/#{filename}#L#{line_start}-L#{line_end}\" >}}#{File.basename filename}{{< /github >}}"
       file.puts "{{< highlight go \"\" >}}"
       if (snippet_show_context && indented)
         file.puts lines[0, start].reverse.select { |x| !x[:indented] && !x[:empty] }.first[:content]

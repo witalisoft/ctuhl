@@ -89,7 +89,7 @@ function task_generate_and_insert_snippets() {
   (
     for file in $(git ls-tree -r master --name-only .); do
       if [[ $file != *.md ]]; then
-        SNIPPETS_TEMP_DIR="${SNIPPETS_TEMP_DIR}" bundle exec ruby "${DIR}/../lib/ruby/extract_snippets.rb" "${file}"
+        GITHUB_REPOSITORY="pellepelster/ctuhl" SNIPPETS_TEMP_DIR="${SNIPPETS_TEMP_DIR}" REPOSITORY_FILE_PREFIX="vault" bundle exec ruby "${DIR}/../lib/ruby/extract_snippets.rb" "${file}"
       fi
     done
   )
@@ -97,7 +97,7 @@ function task_generate_and_insert_snippets() {
   local file="${DIR}/POST.md"
   echo "inserting snippets for '${file}'"
   (
-    SNIPPETS_TEMP_DIR="${SNIPPETS_TEMP_DIR}" FILES_DIR="${DIR}" bundle exec ruby "${DIR}/../lib/ruby/insert_snippets.rb" "${file}"
+    GITHUB_REPOSITORY="pellepelster/ctuhl" SNIPPETS_TEMP_DIR="${SNIPPETS_TEMP_DIR}" REPOSITORY_FILE_PREFIX="vault" FILES_DIR="${DIR}" bundle exec ruby "${DIR}/../lib/ruby/insert_snippets.rb" "${file}"
   )
 
 }

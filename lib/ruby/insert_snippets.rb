@@ -1,5 +1,7 @@
 SNIPPETS_TEMP_DIR = ENV.fetch('SNIPPETS_TEMP_DIR')
 FILES_DIR = ENV.fetch('FILES_DIR')
+GITHUB_REPOSITORY = ENV.fetch('GITHUB_REPOSITORY')
+REPOSITORY_FILE_PREFIX = ENV.fetch('REPOSITORY_FILE_PREFIX')
 
 require_relative 'util'
 
@@ -51,7 +53,7 @@ ARGV.each do|filename|
 
     insert_filename.slice!(FILES_DIR)
     file_lines=[]
-    #file_lines.push({ content: "{{% github href=\"#{insert_filename}\" %}}#{File.basename insert_filename}{{% /github %}}\n" })
+    file_lines.push({ content: "{{< github repository=\"#{GITHUB_REPOSITORY}\" file=\"#{REPOSITORY_FILE_PREFIX}/#{insert_filename}\" >}}#{File.basename insert_filename}{{< /github >}}\n" })
     file_lines.push({ content: "{{< highlight go \"\" >}}\n" })
     file_lines.push(*read_lines("#{FILES_DIR}/#{insert_filename}"))
     file_lines.push({ content: "{{< / highlight >}}\n" })

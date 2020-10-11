@@ -1,5 +1,0 @@
-Port 22
-UsePAM yes
-HostKey /ssh/ssh_host_rsa_key
-
-AuthorizedKeysFile %h/.ssh/authorized_keys

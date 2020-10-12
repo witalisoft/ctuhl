@@ -63,7 +63,7 @@ function ctuhl_extract_file_to_directory {
 }
 
 function ctuhl_ensure_hashicorp {
-    local name="${1:-}"
+    local product="${1:-}"
     local version="${2:-}"
     local checksum="${3:-}"
     
@@ -73,14 +73,14 @@ function ctuhl_ensure_hashicorp {
     mkdir -p "${tmp_dir}" || true
     mkdir -p "${bin_dir}" || true
 
-    local target_file="${tmp_dir}/${name}-${version}.zip"
-    local target_dir="${tmp_dir}/${name}-${version}"
-    local url="https://releases.hashicorp.com/${name}/${version}/${name}_${version}_linux_amd64.zip"
+    local target_file="${tmp_dir}/${product}-${version}.zip"
+    local target_dir="${tmp_dir}/${product}-${version}"
+    local url="https://releases.hashicorp.com/${product}/${version}/${product}_${version}_linux_amd64.zip"
   
     ctuhl_download_and_verify_checksum "${url}" "${target_file}" "${checksum}"
     ctuhl_extract_file_to_directory "${target_file}" "${target_dir}" 
 
-    cp "${target_dir}/${name}" "${bin_dir}/${name}"
+    cp "${target_dir}/${product}" "${bin_dir}/${product}"
 }
 
 

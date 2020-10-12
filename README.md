@@ -37,3 +37,15 @@ Extracts the file given by `${compressed_file}` to the directory `${target_dir}`
 ```
 ctuhl_extract_file_to_directory "/downloads/file.zip" "/tmp/data"
 ```
+
+#### `ctuhl_ensure_hashicorp ${product} ${version} ${checksum} ${bin_dir}`
+
+Generic wrapper for downloading Hasicorp tools built around the convention that product distributions are available at https://releases.hashicorp.com/`${product}`/`${version}`/`${product}`_`${product}`_linux_amd64.zip and the downloaded zip contains an executable named `${product}` which will be written to `${bin_dir}`.
+
+*example*
+```
+ctuhl_ensure_hashicorp "terraform" "0.13.4" "a92df4a151d390144040de5d18351301e597d3fae3679a814ea57554f6aa9b24" "/bin" 
+
+/bin/terraform [...]
+
+```

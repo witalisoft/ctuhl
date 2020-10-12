@@ -32,6 +32,10 @@ test_assert_file_not_exists "${DIR}/test/ctuhl_extract_file_to_directory_$$/noma
 test_assert_file_exists "${DIR}/test/ctuhl_extract_file_to_directory_$$/.file.zip.extracted"
 
 
+ctuhl_ensure_hashicorp "terraform" "0.13.4" "a92df4a151d390144040de5d18351301e597d3fae3679a814ea57554f6aa9b24" "${DIR}/test/ctuhl_ensure_hashicorp_$$" 
+test_assert_file_exists "${DIR}/test/ctuhl_ensure_hashicorp_$$/terraform"
+
+
 ctuhl_ensure_terraform "${DIR}/test/ctuhl_ensure_terraform_$$"
 TERRAFORM_VERSION=$("${DIR}/test/ctuhl_ensure_terraform_$$/terraform" -version)
 test_assert_matches "terraform version" "Terraform v0.12.23" "${TERRAFORM_VERSION}"

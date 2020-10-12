@@ -83,12 +83,12 @@ function ctuhl_ensure_hashicorp {
     cp "${target_dir}/${product}" "${bin_dir}/${product}"
 }
 
-
 function ctuhl_ensure_terraform {
     local bin_dir="${1:-~/.bin}"
-    local version="${2:-0.12.23}"
-    local checksum="${3:-78fd53c0fffd657ee0ab5decac604b0dea2e6c0d4199a9f27db53f081d831a45}"
+    local version="${2:-0.13.4}"
+    local checksum="${3:-a92df4a151d390144040de5d18351301e597d3fae3679a814ea57554f6aa9b24}"
     local tmp_dir="${4:-/tmp/ctuhl_ensure_terraform.$$}"
+
 
     ctuhl_ensure_hashicorp "terraform" "${version}" "${checksum}" "${bin_dir}" "${tmp_dir}"
 }

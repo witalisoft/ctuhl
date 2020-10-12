@@ -38,15 +38,15 @@ test_assert_file_exists "${DIR}/test/ctuhl_ensure_hashicorp_$$/terraform"
 
 ctuhl_ensure_terraform "${DIR}/test/ctuhl_ensure_terraform_$$"
 TERRAFORM_VERSION=$("${DIR}/test/ctuhl_ensure_terraform_$$/terraform" -version)
-test_assert_matches "terraform version" "Terraform v0.12.23" "${TERRAFORM_VERSION}"
+test_assert_matches "terraform version" "Terraform v0.13.4" "${TERRAFORM_VERSION}"
 
 ctuhl_ensure_terraform "${DIR}/test/ctuhl_ensure_terraform_$$"
 TERRAFORM_VERSION=$("${DIR}/test/ctuhl_ensure_terraform_$$/terraform" -version)
-test_assert_matches "terraform version" "Terraform v0.12.23" "${TERRAFORM_VERSION}"
-
-ctuhl_ensure_terraform "${DIR}/test/ctuhl_ensure_terraform_$$" "0.13.4" "a92df4a151d390144040de5d18351301e597d3fae3679a814ea57554f6aa9b24"
-TERRAFORM_VERSION=$("${DIR}/test/ctuhl_ensure_terraform_$$/terraform" -version)
 test_assert_matches "terraform version" "Terraform v0.13.4" "${TERRAFORM_VERSION}"
+
+ctuhl_ensure_terraform "${DIR}/test/ctuhl_ensure_terraform_$$" "0.12.23" "78fd53c0fffd657ee0ab5decac604b0dea2e6c0d4199a9f27db53f081d831a45"
+TERRAFORM_VERSION=$("${DIR}/test/ctuhl_ensure_terraform_$$/terraform" -version)
+test_assert_matches "terraform version" "Terraform v0.12.23" "${TERRAFORM_VERSION}"
 
 ctuhl_ensure_consul "${DIR}/test/ctuhl_ensure_consul_$$"
 CONSUL_VERSION=$("${DIR}/test/ctuhl_ensure_consul_$$/consul" -version)

@@ -1,3 +1,5 @@
+![ctuhl](https://github.com/pellepelster/ctuhl/workflows/ctuhl/badge.svg)
+
 # Commons Tools Utilities Helper and Libraries (cthuhl)
 
 Repository aggregating all the stuff that accumulates over time and may be helpful to others but is not worth an own repository.

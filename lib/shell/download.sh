@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 : '
-Downloads the file given by `${url}` to `${target_file}` and verfies if 
+Downloads the file given by `${url}` to `${target_file}` and verifies if 
 the downloaded file has the checksum `${checksum}`. If a file is already
 present at `${target}` download is skipped.
 '
@@ -62,6 +62,11 @@ function ctuhl_extract_file_to_directory {
     echo "done"    
 }
 
+: '
+Generic wrapper for downloading HasiCorp tools built around the convention that product distributions are available at 
+https://releases.hashicorp.com/`${product}`/`${version}`/`${product}`_`${product}`_linux_amd64.zip and the downloaded 
+zip contains an executable named `${product}` which will be written to `${bin_dir}`.
+'
 function ctuhl_ensure_hashicorp {
     local product="${1:-}"
     local version="${2:-}"
@@ -83,6 +88,10 @@ function ctuhl_ensure_hashicorp {
     cp "${target_dir}/${product}" "${bin_dir}/${product}"
 }
 
+: '
+Downloads terraform `${version}` (download will be checked against `${checksum}`) to `${bin_dir}`.
+ If `${version}` and `${checksum}` is ommited a recent-ish version will be downloaded.
+'
 function ctuhl_ensure_terraform {
     local bin_dir="${1:-~/.bin}"
     local version="${2:-0.13.4}"
@@ -93,9 +102,15 @@ function ctuhl_ensure_terraform {
     ctuhl_ensure_hashicorp "terraform" "${version}" "${checksum}" "${bin_dir}" "${tmp_dir}"
 }
 
+: '
+Downloads Consul `${version}` (download will be checked against `${checksum}`) to `${bin_dir}`.
+ If `${version}` and `${checksum}` is ommited a recent-ish version will be downloaded.
+'
 function ctuhl_ensure_consul {
     local bin_dir="${1:-~/.bin}"
-    local tmp_dir="${2:-/tmp/ctuhl_ensure_consul.$$}"
+    local version="${2:-1.8.4}"
+    local checksum="${3:-0d74525ee101254f1cca436356e8aee51247d460b56fc2b4f7faef8a6853141f}"
+    local tmp_dir="${4:-/tmp/ctuhl_ensure_consul.$$}"
 
-    ctuhl_ensure_hashicorp "consul" "1.8.4" "0d74525ee101254f1cca436356e8aee51247d460b56fc2b4f7faef8a6853141f" "${bin_dir}" "${tmp_dir}"
+    ctuhl_ensure_hashicorp "consul" "${version}" "${checksum}" "${bin_dir}" "${tmp_dir}"
 }

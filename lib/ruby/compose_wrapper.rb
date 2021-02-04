@@ -3,12 +3,9 @@ require 'docker/compose'
 
 # Simple wrapper for compose files
 class ComposeWrapper < Docker::Compose::Session
+
   def initialize(file, dir = '.')
     super(dir: dir, file: file)
-  end
-
-  def start_all
-    up(detached: true)
   end
 
   def docker_host
@@ -43,6 +40,10 @@ class ComposeWrapper < Docker::Compose::Session
     `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' #{container_id(service_name, index: index)}`.strip
   end
 
+  def exec(service_name, command, index: 1)
+    `docker exec #{container_id(service_name, index: index)} #{command}`.strip
+  end
+
   def image(service)
     ps(service).first.image
   end
@@ -51,16 +52,15 @@ class ComposeWrapper < Docker::Compose::Session
     run!('logs', '--tail=all')
   end
 
-  def shutdown
-    run!('down', '-v')
+  def logs(service)
+    run!('logs', service)
   end
 
-  def clean
-    run!('rm', '-fs')
+  def down
+    run!('down', '-v')
   end
 
   def force_shutdown
-    # run!('kill', '')
-    run!('down', '-v')
+    run!('rm', '--force', '--stop', '-v')
   end
 end

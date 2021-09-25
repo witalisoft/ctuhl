@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+set -eu
+
+function pod_name() {
+  echo "port-forward-$(whoami)-${target_host}-${target_port}" | tr -cd '[:alnum:]-'
+}
+
+function run_port_forward() {
+  local target_host="${1}"
+  local target_port="${2}"
+  local local_port="$((10000+target_port))"
+
+  local pod_name=$(pod_name "${target_host}" "${target_port}")
+
+  echo "forwarding localhost:${local_port} to '${target_host}:${target_port}'"
+  echo ""
+  echo "starting port forwarding pod '${pod_name}'"
+  kubectl run --env REMOTE_HOST=${target_host} \
+              --env REMOTE_PORT=${target_port} \
+              --env LOCAL_PORT=${target_port} \
+              --port ${target_port} --image marcnuri/port-forward "${pod_name}"
+
+  echo "waiting for port forwarding pod '${pod_name}' to be ready"
+  kubectl wait --for=condition=Ready "pod/${pod_name}"
+
+  echo "starting local port forward on port localhost:${local_port} to pod '${pod_name}:${target_port}'"
+  kubectl port-forward "${pod_name}" ${local_port}:${target_port}
+}
+
+function delete_pod {
+  local target_host="${1}"
+  local target_port="${2}"
+  local pod_name=$(pod_name "${target_host}" "${target_port}")
+
+  echo "deleting port forwarding pod '${pod_name}"
+  kubectl delete pod "${pod_name}"
+}
+
+
+show_usage() {
+  echo "Usage: $0 [-h <host>] [-p <integer>]" 1>&2
+  exit 1
+}
+
+while getopts ":h:p:" o; do
+  case "${o}" in
+    h)
+      host=${OPTARG} ;;
+    p)
+      port=${OPTARG} ;;
+    *)
+      show_usage ;;
+  esac
+done
+shift $((OPTIND-1))
+
+if [ -z "${host:-}" ] || [ -z "${port:-}" ]; then
+    show_usage
+fi
+
+trap 'delete_pod ${host} ${port}' SIGINT SIGTERM ERR
+
+run_port_forward "${host}" "${port}"

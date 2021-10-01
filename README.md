@@ -7,9 +7,23 @@ Repository aggregating all the stuff that accumulates over time and may be helpf
 
 ## Shell
 
-### Usage
+### Commands
 
-The shell utilities are designed to be used by sourcing the appropiate files, for example
+### k8s-port-forward
+
+For a detailed description look [here]([k8s-port-forward](http://localhost:1313/posts//posts/ctuhl-k8s-port-forward/))
+
+```
+./k8s-port-forward                                          
+starts a socat kubernetes service and forwards a randomly
+chosen local tcp port via socat to tcp:<target host>:<target port>
+
+usage: ./k8s-port-forward -h <target host> -p <target port>
+```
+
+### Library Functions
+
+The shell utilities are designed to be used by sourcing the appropriate files, for example
 
 ```
 #!/usr/bin/env bash

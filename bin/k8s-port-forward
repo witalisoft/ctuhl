@@ -6,26 +6,51 @@ function pod_name() {
   echo "port-forward-$(whoami)-${target_host}-${target_port}" | tr -cd '[:alnum:]-'
 }
 
+function find_tcp_port() {
+  read lower_port upper_port < /proc/sys/net/ipv4/ip_local_port_range
+  while :; do
+    local random_port=$(shuf -i ${lower_port}-${upper_port} -n 1)
+
+    if [[ ! $(netstat -tapln 2>/dev/null | grep ${random_port}) ]]; then
+      echo "${random_port}"
+      break
+    fi
+  done
+}
+
+
 function run_port_forward() {
   local target_host="${1}"
   local target_port="${2}"
-  local local_port="$((10000+target_port))"
+  local local_port="$(find_tcp_port)"
 
   local pod_name=$(pod_name "${target_host}" "${target_port}")
 
-  echo "forwarding localhost:${local_port} to '${target_host}:${target_port}'"
+  echo "================================================================================"
+  echo "forwarding tcp://localhost:${local_port} to tcp://${target_host}:${target_port}"
+  echo "================================================================================"
   echo ""
+
+  echo "================================================================================"
   echo "starting port forwarding pod '${pod_name}'"
   kubectl run --env REMOTE_HOST=${target_host} \
               --env REMOTE_PORT=${target_port} \
               --env LOCAL_PORT=${target_port} \
               --port ${target_port} --image marcnuri/port-forward "${pod_name}"
+  echo "================================================================================"
+  echo ""
 
+  echo "================================================================================"
   echo "waiting for port forwarding pod '${pod_name}' to be ready"
   kubectl wait --for=condition=Ready "pod/${pod_name}"
+  echo "================================================================================"
+  echo ""
 
+  echo "================================================================================"
   echo "starting local port forward on port localhost:${local_port} to pod '${pod_name}:${target_port}'"
   kubectl port-forward "${pod_name}" ${local_port}:${target_port}
+  echo "================================================================================"
+  echo ""
 }
 
 function delete_pod {
@@ -33,13 +58,20 @@ function delete_pod {
   local target_port="${2}"
   local pod_name=$(pod_name "${target_host}" "${target_port}")
 
+  echo ""
+  echo ""
+  echo "================================================================================"
   echo "deleting port forwarding pod '${pod_name}"
   kubectl delete pod "${pod_name}"
+  echo "================================================================================"
 }
 
 
 show_usage() {
-  echo "Usage: $0 [-h <host>] [-p <integer>]" 1>&2
+  echo "starts a socat kubernetes service and forwards a randomly
+chosen local tcp port via socat to tcp:<target host>:<target port>
+
+usage: $0 -h <target host> -p <target port>" 1>&2
   exit 1
 }
 

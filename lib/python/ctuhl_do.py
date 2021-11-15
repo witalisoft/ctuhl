@@ -81,16 +81,28 @@ def terraform_destroy(variables: dict, manifest_dir: str):
     terraform(['destroy', '-auto-approve'] + terraform_vars, manifest_dir)
 
 
-def terraform_apply(variables: dict, manifest_dir: str):
+def terraform_apply(variables: dict, manifest_dir: str, workspace=None):
     terraform_vars = list(itertools.chain(*[('-var', f"{key}={value}") for (key, value) in variables.items()]))
 
     if not os.path.isdir(f"{manifest_dir}/.terraform"):
         terraform(['init'] + terraform_vars, manifest_dir)
 
+    if workspace is not None:
+        workspaces = terraform_workspaces(manifest_dir)
+
+        if workspace not in workspaces:
+            terraform(['workspace', 'new', workspace], manifest_dir)
+
     terraform(['apply', '-auto-approve'] + terraform_vars, manifest_dir)
 
 
-def terraform(command_line, manifest_dir):
+def terraform_workspaces(manifest_dir):
+    workspaces = terraform(['workspace', 'list'], manifest_dir, capture_output=True).split("\n")
+    workspaces = map(lambda w: w.replace("*", "").strip(), workspaces)
+    return [w for w in workspaces if len(w) > 0]
+
+
+def terraform(command_line, manifest_dir, capture_output=False):
     root_dir = os.getcwd()
 
     file_name = download_file(
@@ -102,6 +114,10 @@ def terraform(command_line, manifest_dir):
 
     env = os.environ.copy()
     env['PATH'] = f"{env['PATH']}:{root_dir}/.bin"
+
+    if capture_output:
+        return subprocess.run(['terraform'] + command_line, env=env, check=True, cwd=manifest_dir,
+                              capture_output=capture_output).stdout.decode("utf-8")
 
     logger.info(f"running terraform in '{manifest_dir}")
     logger.info("--------------------------------------------------------------------------------")

@@ -1,14 +1,14 @@
 import hashlib
 import itertools
 import os
+import requests
 import subprocess
 import zipfile
 from os import path
 from pprint import pprint
-from urllib.parse import urlparse
-
-import requests
 from structlog import get_logger
+from subprocess import Popen, PIPE, STDOUT
+from urllib.parse import urlparse
 
 logger = get_logger()
 
@@ -76,9 +76,23 @@ def extract_file(file_name, extract_dir):
     open(extracted_filed_marker, "wb").write(str.encode("ok"))
 
 
-def terraform_destroy(variables: dict, manifest_dir: str):
+def terraform_destroy(variables: dict, manifest_dir: str, workspace=None):
+    logger.info(f"destroying all resources from '{manifest_dir}' in workspace '{workspace}'")
     terraform_vars = list(itertools.chain(*[('-var', f"{key}={value}") for (key, value) in variables.items()]))
-    terraform(['destroy', '-auto-approve'] + terraform_vars, manifest_dir)
+
+    if workspace is not None:
+        terraform_ensure_workspace(workspace, manifest_dir)
+
+    terraform(['destroy', '-auto-approve'] + terraform_vars, manifest_dir, workspace)
+
+
+def terraform_ensure_workspace(workspace, manifest_dir):
+    workspaces = terraform_workspaces_list(manifest_dir)
+
+    if workspace not in workspaces:
+        terraform(['workspace', 'new', workspace], manifest_dir)
+
+    terraform(['workspace', 'select', workspace], manifest_dir)
 
 
 def terraform_apply(variables: dict, manifest_dir: str, workspace=None):
@@ -88,16 +102,13 @@ def terraform_apply(variables: dict, manifest_dir: str, workspace=None):
         terraform(['init'] + terraform_vars, manifest_dir)
 
     if workspace is not None:
-        workspaces = terraform_workspaces(manifest_dir)
-
-        if workspace not in workspaces:
-            terraform(['workspace', 'new', workspace], manifest_dir)
+        terraform_ensure_workspace(workspace, manifest_dir)
 
     terraform(['apply', '-auto-approve'] + terraform_vars, manifest_dir)
 
 
-def terraform_workspaces(manifest_dir):
-    workspaces = terraform(['workspace', 'list'], manifest_dir, capture_output=True).split("\n")
+def terraform_workspaces_list(manifest_dir):
+    workspaces = terraform(['workspace', 'list'], manifest_dir).split("\n")
     workspaces = map(lambda w: w.replace("*", "").strip(), workspaces)
     return [w for w in workspaces if len(w) > 0]
 
@@ -115,21 +126,38 @@ def terraform(command_line, manifest_dir, capture_output=False):
     env = os.environ.copy()
     env['PATH'] = f"{env['PATH']}:{root_dir}/.bin"
 
-    if capture_output:
-        return subprocess.run(['terraform'] + command_line, env=env, check=True, cwd=manifest_dir,
-                              capture_output=capture_output).stdout.decode("utf-8")
+    logger.info(f"running terraform '{command_line[0]}' in '{manifest_dir}")
+    return run_command([f"{root_dir}/.bin/terraform"] + command_line, env=env, working_dir=manifest_dir)
 
-    logger.info(f"running terraform in '{manifest_dir}")
-    logger.info("--------------------------------------------------------------------------------")
-    subprocess.run(['terraform'] + command_line, env=env, check=True, cwd=manifest_dir)
-    logger.info("--------------------------------------------------------------------------------")
 
+def run_command(commandline, env, working_dir):
+    process = subprocess.Popen(commandline, env=env, cwd=working_dir, stdout=PIPE)
+    logger.debug(f"running command '{' '.join(commandline)}' in directory '{working_dir}'")
+    logger.info("--------------------------------------------------------------------------------")
+    result = ""
+    while True:
+        output = process.stdout.readline()
+        if process.poll() is not None:
+            break
+        if output:
+            line = output.decode()
+            print(line.strip())
+            result += line
+
+        error = process.stderr
+        if error is not None:
+            print(error.strip())
+
+    rc = process.poll()
+    if len(result) == 0:
+        print("<no output>")
+    logger.info("--------------------------------------------------------------------------------")
+    return result
 
 def pass_secret(path):
     return subprocess.run(["pass", path], capture_output=True).stdout.decode('utf-8').strip()
 
 
 def pass_insert_secret(path, secret):
-    from subprocess import Popen, PIPE, STDOUT
     p = Popen(["pass", "insert", "--echo", "--force", path], stdout=PIPE, stdin=PIPE, stderr=STDOUT)
     result = p.communicate(input=f"{secret}\n".encode("utf-8"))

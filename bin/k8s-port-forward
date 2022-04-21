@@ -2,16 +2,40 @@
 
 set -eu
 
+function check_os() {
+  osname="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  case "$osname" in
+    darwin)
+      return 0
+      ;;
+    linux)
+      return 0
+      ;;
+    *)
+      echo -en "Unsupported OS: ${osname}\nsupported: darwin, linux\n"
+      return 1
+      ;;
+  esac
+}
+
 function pod_name() {
   echo "port-forward-$(whoami)-${target_host}-${target_port}" | tr -cd '[:alnum:]-'
 }
 
 function find_tcp_port() {
-  read lower_port upper_port < /proc/sys/net/ipv4/ip_local_port_range
+  case "$osname" in
+    darwin)
+      read lower_port upper_port < <(sysctl -n net.inet.ip.portrange.first net.inet.ip.portrange.last | tr '\n' ' ')
+      ;;
+    linux)
+      read lower_port upper_port < /proc/sys/net/ipv4/ip_local_port_range
+      ;;
+  esac
+
   while :; do
     local random_port=$(shuf -i ${lower_port}-${upper_port} -n 1)
 
-    if [[ ! $(netstat -tapln 2>/dev/null | grep ${random_port}) ]]; then
+    if [[ ! $(lsof -nP -iTCP:${random_port} -sTCP:LISTEN 2>/dev/null) ]]; then
       echo "${random_port}"
       break
     fi
@@ -74,6 +98,8 @@ chosen local tcp port via socat to tcp:<target host>:<target port>
 usage: $0 -h <target host> -p <target port>" 1>&2
   exit 1
 }
+
+check_os
 
 while getopts ":h:p:" o; do
   case "${o}" in
